@@ -46,6 +46,14 @@ lazy_static! {
         "command_verify_user": "
         if this is not a valid linux command, fix it and return only the fixed version.
         otherwise, return only the original input.
+        ",
+        "interpreter_system": "
+        You are a machine that explains the output of linux commands in understandable
+        language.
+        ",
+        "interpreter_user": "
+        This output was the result of the command. Explain the output in understandable
+        language.
         "
     });
 }

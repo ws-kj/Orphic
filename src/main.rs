@@ -23,15 +23,27 @@ fn get_prompt(key: &'static str) -> &str {
     prompts::PROMPTS[key].as_str().unwrap()
 }
 
-fn parse_command(body: &String, tried_verify: bool) -> Option<Value> {
+fn try_extract(body: &String) -> Option<Value> {
     if body.find('{') == None || body.find('}') == None {
         return None;
     }
 
     let data = body.substring(body.find('{').unwrap(),body.find('}').unwrap()+1);
     match serde_json::from_str(data) {
-        Ok(commands) => Some(commands), //todo gpt verify
+        Ok(commands) => Some(commands),
         Err(_) => None
+    }
+}
+
+async fn parse_command(client: &Client, body: &String) -> Result<Option<Value>, Box<dyn Error>> {
+    match try_extract(body) {
+        Some(commands) => Ok(Some(commands)),
+        None => {
+            match verify_json(client, body).await? {
+                Some(body) => Ok(try_extract(&body)),
+                None => Ok(None)
+            }
+        }
     }
 }
 
@@ -80,15 +92,13 @@ async fn try_command(client: &Client, input: String, history: &mut Vec<ChatCompl
     let response = client.chat().create(request).await?;
     let body = (response.choices[0]).message.content.to_owned();
 
-    return match parse_command(&body, false) {
+    return match parse_command(client, &body).await? {
         Some(commands) => {
             match commands["command"].as_str() {
                 Some(command) => {
                     let mut shell = shell(command);
                     shell.stdout(Stdio::piped());
-                    let output = shell.execute_output()?;
-                    let out = String::from_utf8(output.stdout)?;
-                    Ok(out)
+                    Ok(String::from_utf8(shell.execute_output()?.stdout)?)
 
                 },
                 None => Ok(body)
