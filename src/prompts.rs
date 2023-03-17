@@ -53,8 +53,8 @@ lazy_static! {
         ",
         "interpreter_user": "
         This output was the result of the command. Translate the output into 
-        understandable language. Be extremely concise. You don't need to
-        mention what the command was, just translate the output.
+        understandable language. Be extremely concise but include all information
+        from the output. Don't mention the command, just translate the output.
         "
     }); 
 }
