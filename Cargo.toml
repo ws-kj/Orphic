@@ -3,7 +3,7 @@ name = "orphic"
 version = "0.1.0"
 edition = "2021"
 authors = ["Will Savage <wsavage6316@gmail.com>"]
-description = "Orphic -- Interact with your system using natural language.\n(Powered by ChatGPT)"
+description = "Orphic -- A natural language interface for *nix systems.\n(Powered by ChatGPT)"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

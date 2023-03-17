@@ -172,12 +172,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .short('r')
             .long("repl")
             .action(ArgAction::SetTrue)
+            .help("Start a REPL environment for orphic commands")
         )
         .arg(
             Arg::new("interpret")
             .short('i')
             .long("interpret")
             .action(ArgAction::SetTrue)
+            .help("Interpret output into natural language")
         )
         .get_matches();
 
