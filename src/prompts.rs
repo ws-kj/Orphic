@@ -35,25 +35,26 @@ lazy_static! {
         ",
         "command_verify_system": "
         you are a machine which verifies linux commands. if the command given to
-        you is invalid or has any issues that will prevent it from running correctly,
-        fix it and return it. otherwise, return only the original input.
+        you is invalid or has any issues that will prevent it from running 
+        correctly, fix it and return it. otherwise, return only the original input.
         ",
         "json_verify_user": "
         if this json object is invalid, fix it and return only the fixed version.
-        otherwise, return only the original input. don't explain anything, just return
-        the fixed version.
+        otherwise, return only the original input. don't explain anything, 
+        just return the fixed version.
         ",
         "command_verify_user": "
-        if this is not a valid linux command, fix it and return only the fixed version.
-        otherwise, return only the original input.
+        if this is not a valid linux command, fix it and return only the fixed 
+        version. Otherwise, return only the original input.
         ",
         "interpreter_system": "
-        You are a machine that explains the output of linux commands in understandable
-        language.
+        You are a machine that translates the output of linux commands into 
+        understandable but concise language.
         ",
         "interpreter_user": "
-        This output was the result of the command. Explain the output in understandable
-        language.
+        This output was the result of the command. Translate the output into 
+        understandable language. Be extremely concise. You don't need to
+        mention what the command was, just translate the output.
         "
-    });
+    }); 
 }

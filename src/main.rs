@@ -11,6 +11,7 @@ use serde_json::Value;
 use substring::Substring;
 use execute::{Execute, shell};
 use clap::{command, Arg, ArgAction};
+use serde_json::json;
 
 use std::error::Error;
 use std::process::Stdio;
@@ -76,6 +77,28 @@ async fn verify_json(client: &Client, input: &String) -> Result<Option<String>, 
     }
 }
 
+async fn interpret(client: &Client, task: &String, output: &String) -> Result<String, Box<dyn Error>> {
+    let request = CreateChatCompletionRequestArgs::default()
+        .max_tokens(512u16)
+        .model("gpt-3.5-turbo")
+        .messages(vec![
+        ChatCompletionRequestMessage {
+            role: Role::System,
+            content: String::from(get_prompt("interpreter_system")),
+            name: None
+        },
+        ChatCompletionRequestMessage {
+            role: Role::User,
+            content: String::from(json!({"task": task, "output": output}).to_string()) + get_prompt("interpreter_user"),
+            name: None
+        },
+        ])
+        .build()?;
+
+    let response = client.chat().create(request).await?;
+    Ok((response.choices[0]).message.content.to_owned())
+}
+
 async fn try_command(client: &Client, input: String, history: &mut Vec<ChatCompletionRequestMessage>) -> Result<String, Box<dyn Error>> {
     history.push(ChatCompletionRequestMessage {
         role: Role::User,
@@ -108,7 +131,7 @@ async fn try_command(client: &Client, input: String, history: &mut Vec<ChatCompl
     }
 }
     
-async fn repl(client: &Client) -> Result<(), Box<dyn Error>> {
+async fn repl(client: &Client, do_interpret: bool) -> Result<(), Box<dyn Error>> {
     let mut history: Vec<ChatCompletionRequestMessage> = Vec::new();
 
     // assistant system
@@ -121,13 +144,19 @@ async fn repl(client: &Client) -> Result<(), Box<dyn Error>> {
        io::stdin().read_line(&mut input)?;
        match input.as_str().trim() {
             "quit" => break,
-            _ => {
-                let resp = try_command(client, input, &mut history).await?;
+            task => {
+                let res = try_command(client, String::from(task), &mut history).await?;
                 history.push(ChatCompletionRequestMessage {
                     role: Role::Assistant,
-                    content: resp,
+                    content: res.clone(),
                     name: None
                 });
+                
+                if do_interpret {
+                    println!("{}", interpret(&client, &(String::from(task.trim())), &res).await?);
+                } else {
+                    println!("{}", res.trim());
+                }
             }
         }
     }
@@ -144,12 +173,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .long("repl")
             .action(ArgAction::SetTrue)
         )
+        .arg(
+            Arg::new("interpret")
+            .short('i')
+            .long("interpret")
+            .action(ArgAction::SetTrue)
+        )
         .get_matches();
 
     let client = Client::new();
 
     if matches.get_flag("repl") {
-        repl(&client).await?;
+        repl(&client, matches.get_flag("interpret")).await?;
         return Ok(());
     }
 
@@ -161,7 +196,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let mut history: Vec<ChatCompletionRequestMessage> = Vec::new();
     let res = try_command(&client, task.join(" "), &mut history).await?;
-    println!("{}", res);
-    
+
+    if matches.get_flag("interpret") {
+        println!("{}", interpret(&client, &(task.join(" ")), &res).await?);
+    } else {
+        println!("{}", res.trim());
+    }
+
     Ok(())
 }
