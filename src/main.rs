@@ -30,11 +30,12 @@ fn try_extract(body: &String) -> Option<Value> {
         return None;
     }
 
-    let data = body.substring(body.find('{').unwrap(),body.find('}').unwrap()+1)
-        .replace("'", "\\'");
+    let data = body.substring(body.find('{').unwrap(),body.find('}').unwrap()+1); 
+   //     .replace("*", "\\*");
+    println!("{}", data);
     match serde_json::from_str(&data) {
         Ok(commands) => Some(commands),
-        Err(_) => None
+        Err(e) => { println!("{}", e); None }
     }
 }
 
@@ -194,7 +195,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let client = Client::new();
 
     if matches.get_flag("repl") {
-        repl(&client, matches.get_flag("interpret"), matches.get_flag("verbose")).await?;
+        repl(&client, matches.get_flag("interpret"), matches.get_flag("debug")).await?;
         return Ok(());
     }
 
