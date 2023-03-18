@@ -12,8 +12,11 @@ Orphic uses GPT to translate natural language tasks into shell commands, and the
 ### Usage
 Orphic is designed to be used like you would use any other CLI tool.
 `$ orphic sort ~/Downloads into folders based on media type`
+
 `$ orphic how strong is my network connection`
+
 `$ orphic what version kernel am i running`
+
 `$ orphic <do task that would otherwise require complex commands that you don't know off the top of your head>`
 
 You can specify `-i` or `--interpret` to have the output of the command described in natural language as well (note that this is generally very slow).
@@ -50,5 +53,6 @@ Pull requests welcome. If you use Orphic and get a good/interesting output, plea
 
 ### License
 [MIT](**https://choosealicense.com/licenses/mit/**)
+
 Copyright (c) Will Savage, 2023
 
