@@ -32,7 +32,7 @@ fn try_extract(body: &String) -> Option<Value> {
 
     let data = body.substring(body.find('{').unwrap(),body.find('}').unwrap()+1); 
    //     .replace("*", "\\*");
-    println!("{}", data);
+    //println!("{}", data);
     match serde_json::from_str(&data) {
         Ok(commands) => Some(commands),
         Err(e) => { println!("{}", e); None }

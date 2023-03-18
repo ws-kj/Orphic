@@ -41,7 +41,7 @@ lazy_static! {
         "json_verify_user": "
         if this json object is invalid, fix it and return only the fixed version.
         otherwise, return only the original input. don't explain anything, 
-        just return the fixed version.
+        just return the fixed version. Look for missing braces especially.
         ",
         "command_verify_user": "
         if this is not a valid linux command, fix it and return only the fixed 
