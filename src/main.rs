@@ -183,8 +183,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .help("Interpret output into natural language")
         )
         .arg(
-            Arg::new("verbose")
-            .short('v')
+            Arg::new("debug")
+            .short('d')
             .long("verbose")
             .action(ArgAction::SetTrue)
             .help("Display raw GPT output")
@@ -206,7 +206,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let mut history: Vec<ChatCompletionRequestMessage> = Vec::new();
 
-    let res = try_command(&client, task.join(" "), &mut history, matches.get_flag("verbose")).await?;
+    let res = try_command(&client, task.join(" "), &mut history, matches.get_flag("debug")).await?;
 
     if matches.get_flag("interpret") {
         println!("{}", interpret(&client, &(task.join(" ")), &res).await?);
