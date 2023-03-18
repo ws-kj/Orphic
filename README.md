@@ -7,7 +7,7 @@ Orphic uses GPT to translate natural language tasks into shell commands, and the
 ### Installation
 * Make sure your system has rust and cargo.
 * `cargo install orphic`
-* Orphic requires the `OPENAI_API_KEY` environment variable to be set. You can generate one [here](**https://openai.com/**).
+* Orphic requires the `OPENAI_API_KEY` environment variable to be set. You can generate one [here](https://openai.com/).
 
 ### Usage
 Orphic is designed to be used like you would use any other CLI tool.
@@ -52,7 +52,7 @@ Sometimes Orphic works. Sometimes it doesn't. GPT is inconsistent, and the promp
 Pull requests welcome. If you use Orphic and get a good/interesting output, please send it to me. Likewise, if you get a really bad output, please also send it to me or open an issue. This system is very experimental and I'm still trying to figure out what works and what doesn't when it comes to prompts and configurations.
 
 ### License
-[MIT](**https://choosealicense.com/licenses/mit/**)
+[MIT](https://choosealicense.com/licenses/mit/)
 
 Copyright (c) Will Savage, 2023
 
