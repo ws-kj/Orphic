@@ -101,7 +101,7 @@ async fn interpret(client: &Client, task: &String, output: &String) -> Result<St
     Ok((response.choices[0]).message.content.to_owned())
 }
 
-async fn try_command(client: &Client, input: String, history: &mut Vec<ChatCompletionRequestMessage>) -> Result<String, Box<dyn Error>> {
+async fn try_command(client: &Client, input: String, history: &mut Vec<ChatCompletionRequestMessage>, verbose: bool) -> Result<String, Box<dyn Error>> {
     history.push(ChatCompletionRequestMessage {
         role: Role::User,
         content: input + get_prompt("assistant_user"),
@@ -116,6 +116,8 @@ async fn try_command(client: &Client, input: String, history: &mut Vec<ChatCompl
 
     let response = client.chat().create(request).await?;
     let body = (response.choices[0]).message.content.to_owned();
+
+    if verbose { println!("{}", body); }
 
     return match parse_command(client, &body).await? {
         Some(commands) => {
@@ -133,12 +135,9 @@ async fn try_command(client: &Client, input: String, history: &mut Vec<ChatCompl
     }
 }
     
-async fn repl(client: &Client, do_interpret: bool) -> Result<(), Box<dyn Error>> {
+async fn repl(client: &Client, do_interpret: bool, verbose: bool) -> Result<(), Box<dyn Error>> {
     let mut history: Vec<ChatCompletionRequestMessage> = Vec::new();
 
-    // assistant system
-    // assistant examples
-    
     loop {
        let mut input = String::new();
        print!("orphic> ");
@@ -147,7 +146,7 @@ async fn repl(client: &Client, do_interpret: bool) -> Result<(), Box<dyn Error>>
        match input.as_str().trim() {
             "quit" => break,
             task => {
-                let res = try_command(client, String::from(task), &mut history).await?;
+                let res = try_command(client, String::from(task), &mut history, verbose).await?;
                 history.push(ChatCompletionRequestMessage {
                     role: Role::Assistant,
                     content: res.clone(),
@@ -183,12 +182,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .action(ArgAction::SetTrue)
             .help("Interpret output into natural language")
         )
+        .arg(
+            Arg::new("verbose")
+            .short('v')
+            .long("verbose")
+            .action(ArgAction::SetTrue)
+            .help("Display raw GPT output")
+        )
         .get_matches();
 
     let client = Client::new();
 
     if matches.get_flag("repl") {
-        repl(&client, matches.get_flag("interpret")).await?;
+        repl(&client, matches.get_flag("interpret"), matches.get_flag("verbose")).await?;
         return Ok(());
     }
 
@@ -198,17 +204,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .map(|v| v.as_str())
         .collect::<Vec<_>>();
 
-    /*let mut history: Vec<ChatCompletionRequestMessage> = vec![ 
-        ChatCompletionRequestMessage {
-            role: Role::System,
-            content: String::from(get_prompt("assistant_system")) + OS,
-            name: None
-        },
-    ];*/
-
     let mut history: Vec<ChatCompletionRequestMessage> = Vec::new();
 
-    let res = try_command(&client, task.join(" "), &mut history).await?;
+    let res = try_command(&client, task.join(" "), &mut history, matches.get_flag("verbose")).await?;
 
     if matches.get_flag("interpret") {
         println!("{}", interpret(&client, &(task.join(" ")), &res).await?);

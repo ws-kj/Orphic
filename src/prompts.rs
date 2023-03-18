@@ -52,9 +52,10 @@ lazy_static! {
         understandable but concise language.
         ",
         "interpreter_user": "
-        This output was the result of the command. Translate the output into 
-        understandable language. Be extremely concise but include all information
-        from the output. Don't mention the command, just translate the output.
+        This output was the result of the command. Translate the data in the 
+        output into understandable language. Be extremely concise but include
+        all data from the output. Don't mention the command, just translate 
+        the data.
         "
     }); 
 }
