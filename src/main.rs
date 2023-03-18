@@ -16,6 +16,7 @@ use serde_json::json;
 use std::error::Error;
 use std::process::Stdio;
 use std::io::{self, Write};
+use std::env::consts::OS;
 
 pub mod prompts;
 
@@ -29,8 +30,9 @@ fn try_extract(body: &String) -> Option<Value> {
         return None;
     }
 
-    let data = body.substring(body.find('{').unwrap(),body.find('}').unwrap()+1);
-    match serde_json::from_str(data) {
+    let data = body.substring(body.find('{').unwrap(),body.find('}').unwrap()+1)
+        .replace("'", "\\'");
+    match serde_json::from_str(&data) {
         Ok(commands) => Some(commands),
         Err(_) => None
     }
@@ -82,16 +84,16 @@ async fn interpret(client: &Client, task: &String, output: &String) -> Result<St
         .max_tokens(512u16)
         .model("gpt-3.5-turbo")
         .messages(vec![
-        ChatCompletionRequestMessage {
-            role: Role::System,
-            content: String::from(get_prompt("interpreter_system")),
-            name: None
-        },
-        ChatCompletionRequestMessage {
-            role: Role::User,
-            content: String::from(json!({"task": task, "output": output}).to_string()) + get_prompt("interpreter_user"),
-            name: None
-        },
+            ChatCompletionRequestMessage {
+                role: Role::System,
+                content: String::from(get_prompt("interpreter_system")),
+                name: None
+            },
+            ChatCompletionRequestMessage {
+                role: Role::User,
+                content: String::from(json!({"task": task, "output": output}).to_string()) + get_prompt("interpreter_user"),
+                name: None
+            },
         ])
         .build()?;
 
@@ -196,7 +198,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .map(|v| v.as_str())
         .collect::<Vec<_>>();
 
+    /*let mut history: Vec<ChatCompletionRequestMessage> = vec![ 
+        ChatCompletionRequestMessage {
+            role: Role::System,
+            content: String::from(get_prompt("assistant_system")) + OS,
+            name: None
+        },
+    ];*/
+
     let mut history: Vec<ChatCompletionRequestMessage> = Vec::new();
+
     let res = try_command(&client, task.join(" "), &mut history).await?;
 
     if matches.get_flag("interpret") {
