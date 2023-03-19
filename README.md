@@ -26,7 +26,9 @@ Orphic is designed to be used like you would use any other CLI tool.
 
 `$ orphic <do task that would otherwise require complex commands that you don't know off the top of your head>`
 
-`-u` or `--unsafe` will execute commands without user verification. 
+`-u` or `--unsafe` will execute commands without user verification.
+
+`-4` or `--gpt4` will attempt to use GPT-4 instead of GPT-3.5-Turbo. Note that this will only work if your OpenAI account has access to the model.
 
 `-i` or `--interpret` will describe the output of the task in natural language (note that this is generally very slow).
 ```

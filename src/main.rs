@@ -20,15 +20,19 @@ use std::fmt;
 
 pub mod prompts;
 
+const GPT_35_TURBO: &'static str = "gpt-3.5-turbo";
+const GPT_4: &'static str = "gpt-4";
+
 #[derive(Debug)]
 struct UserAbort();
 
 #[derive(Debug, Copy, Clone)]
 struct Flags {
-    repl:        bool,
-    interpret:   bool,
-    debug:       bool,
-    unsafe_mode: bool
+    repl:          bool,
+    interpret:     bool,
+    debug:         bool,
+    unsafe_mode:   bool,
+    model: &'static str
 }
 
 impl fmt::Display for UserAbort {
@@ -97,10 +101,10 @@ async fn verify_json(client: &Client, input: &String) -> Result<Option<String>, 
     }
 }
 
-async fn interpret(client: &Client, task: &String, output: &String) -> Result<String, Box<dyn Error>> {
+async fn interpret(client: &Client, task: &String, output: &String, flags: Flags) -> Result<String, Box<dyn Error>> {
     let request = CreateChatCompletionRequestArgs::default()
         .max_tokens(512u16)
-        .model("gpt-3.5-turbo")
+        .model(flags.model)
         .messages(vec![
             ChatCompletionRequestMessage {
                 role: Role::System,
@@ -128,7 +132,7 @@ async fn try_command(client: &Client, input: String, history: &mut Vec<ChatCompl
 
     let request = CreateChatCompletionRequestArgs::default()
         .max_tokens(512u16)
-        .model("gpt-3.5-turbo")
+        .model(flags.model)
         .messages((*history).clone())
         .build()?;
 
@@ -187,7 +191,7 @@ async fn repl(client: &Client, flags: Flags) -> Result<(), Box<dyn Error>> {
                         });
                         
                         if flags.interpret {
-                            println!("{}", interpret(&client, &(String::from(task.trim())), &res).await?);
+                            println!("{}", interpret(&client, &(String::from(task.trim())), &res, flags).await?);
                         } else {
                             println!("{}", res.trim());
                         }
@@ -239,13 +243,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .action(ArgAction::SetTrue)
             .help("Execute commands without confirmation")
         )
+        .arg(
+            Arg::new("gpt4")
+            .short('4')
+            .long("gpt4")
+            .action(ArgAction::SetTrue)
+            .help("Use GPT-4 instead of GPT-3.5")
+        )
         .get_matches();
 
     let flags = Flags {
         repl:        matches.get_flag("repl"),
         interpret:   matches.get_flag("interpret"),
         debug:       matches.get_flag("debug"),
-        unsafe_mode: matches.get_flag("unsafe")
+        unsafe_mode: matches.get_flag("unsafe"),
+        model: if matches.get_flag("gpt4") { GPT_4 } else { GPT_35_TURBO }
     };
 
     let client = Client::new();
@@ -266,7 +278,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let res = try_command(&client, task.join(" "), &mut history, flags).await?;
 
     if flags.interpret {
-        println!("{}", interpret(&client, &(task.join(" ")), &res).await?);
+        println!("{}", interpret(&client, &(task.join(" ")), &res, flags).await?);
     } else {
         println!("{}", res.trim());
     }
