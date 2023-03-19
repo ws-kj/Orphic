@@ -6,7 +6,7 @@
 Orphic uses GPT to translate natural language tasks into shell commands, and then executes them on your system. Use at your own risk.
 
 
-* Note: Orphic defaults to safe mode, and will not automatically execute commands without confirmation unless unsafe mode is specified. *
+*Note: Orphic defaults to safe mode, and will not automatically execute commands without confirmation unless unsafe mode is specified.*
 
 ### Installation
 * Make sure your system has rust and cargo.
