@@ -4,6 +4,10 @@
 ---
 ### Overview
 Orphic uses GPT to translate natural language tasks into shell commands, and then executes them on your system. Use at your own risk.
+
+
+*Note: Orphic defaults to safe mode, and will not automatically execute commands without confirmation unless unsafe mode is specified.*
+
 ### Installation
 * Make sure your system has rust and cargo.
 * `cargo install orphic`
@@ -22,18 +26,22 @@ Orphic is designed to be used like you would use any other CLI tool.
 
 `$ orphic <do task that would otherwise require complex commands that you don't know off the top of your head>`
 
+`-u` or `--unsafe` will execute commands without user verification.
+
+`-4` or `--gpt4` will attempt to use GPT-4 instead of GPT-3.5-Turbo. Note that this will only work if your OpenAI account has access to the model.
+
 `-i` or `--interpret` will describe the output of the task in natural language (note that this is generally very slow).
 ```
-$ orphic -i how much disk space is available
+$ orphic -u -i how much disk space is available
 You have 16GB available out of a total of 113GB on your main hard 
 drive, which is mounted on the root directory. 
 Other partitions and file systems are also listed with their 
 respective usage percentages and mount points.
 ```
 
-`-d` or `--debug` will display the raw GPT text along with the regular output.
+`-d` or `--debug` will display the raw GPT text along with the regular output, even in unsafe mode.
 ```
-$ orphic count the lines of rust code in this directory excluding /target/.
+$ orphic -u -d count the lines of rust code in this directory excluding /target/.
 {"command": "find . -name target -prune -o -name '*.rs' -type f -print0 | xargs -0 wc -l"}
 61 ./src/prompts.rs
      219 ./src/main.rs
@@ -42,7 +50,7 @@ $ orphic count the lines of rust code in this directory excluding /target/.
 
 `-r` or `--repl` will start Orphic in a REPL environment.
 ```
-$ orphic -r
+$ orphic -u -r
 orphic> when did i last login
 wtmp begins Sat Mar 18 14:55
 orphic> quit
