@@ -16,8 +16,27 @@ use serde_json::json;
 use std::error::Error;
 use std::process::Stdio;
 use std::io::{self, Write};
+use std::fmt;
 
 pub mod prompts;
+
+#[derive(Debug)]
+struct UserAbort();
+
+#[derive(Debug, Copy, Clone)]
+struct Flags {
+    repl:        bool,
+    interpret:   bool,
+    debug:       bool,
+    unsafe_mode: bool
+}
+
+impl fmt::Display for UserAbort {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "User aborted command")
+    }
+}
+impl Error for UserAbort {}
 
 fn get_prompt(key: &'static str) -> &str {
     assert!(prompts::PROMPTS[key].is_string());
@@ -100,7 +119,7 @@ async fn interpret(client: &Client, task: &String, output: &String) -> Result<St
     Ok((response.choices[0]).message.content.to_owned())
 }
 
-async fn try_command(client: &Client, input: String, history: &mut Vec<ChatCompletionRequestMessage>, verbose: bool) -> Result<String, Box<dyn Error>> {
+async fn try_command(client: &Client, input: String, history: &mut Vec<ChatCompletionRequestMessage>, flags: Flags) -> Result<String, Box<dyn Error>> {
     history.push(ChatCompletionRequestMessage {
         role: Role::User,
         content: input + get_prompt("assistant_user"),
@@ -116,12 +135,25 @@ async fn try_command(client: &Client, input: String, history: &mut Vec<ChatCompl
     let response = client.chat().create(request).await?;
     let body = (response.choices[0]).message.content.to_owned();
 
-    if verbose { println!("{}", body); }
+    if flags.debug && flags.unsafe_mode { println!("{}", body); }
 
     return match parse_command(client, &body).await? {
         Some(commands) => {
             match commands["command"].as_str() {
                 Some(command) => {
+                    if !flags.unsafe_mode {
+                        let mut input = String::new();
+                        println!("{}", command);
+                        print!("Execute? [Y/n] ");
+                        io::stdout().flush()?;
+                        io::stdin().read_line(&mut input)?;
+
+                        match input.trim().to_lowercase().as_str() {
+                            ""  | "y" | "yes" => {},
+                            _ => return Err(Box::new(UserAbort()))
+                        };
+                    }
+
                     let mut shell = shell(command);
                     shell.stdout(Stdio::piped());
                     Ok(String::from_utf8(shell.execute_output()?.stdout)?)
@@ -134,7 +166,7 @@ async fn try_command(client: &Client, input: String, history: &mut Vec<ChatCompl
     }
 }
     
-async fn repl(client: &Client, do_interpret: bool, verbose: bool) -> Result<(), Box<dyn Error>> {
+async fn repl(client: &Client, flags: Flags) -> Result<(), Box<dyn Error>> {
     let mut history: Vec<ChatCompletionRequestMessage> = Vec::new();
 
     loop {
@@ -145,18 +177,30 @@ async fn repl(client: &Client, do_interpret: bool, verbose: bool) -> Result<(), 
        match input.as_str().trim() {
             "quit" => break,
             task => {
-                let res = try_command(client, String::from(task), &mut history, verbose).await?;
-                history.push(ChatCompletionRequestMessage {
-                    role: Role::Assistant,
-                    content: res.clone(),
-                    name: None
-                });
-                
-                if do_interpret {
-                    println!("{}", interpret(&client, &(String::from(task.trim())), &res).await?);
-                } else {
-                    println!("{}", res.trim());
+                let res_maybe = try_command(client, String::from(task), &mut history, flags).await;
+                match res_maybe {
+                    Ok(res) => {
+                        history.push(ChatCompletionRequestMessage {
+                            role: Role::Assistant,
+                            content: res.clone(),
+                            name: None
+                        });
+                        
+                        if flags.interpret {
+                            println!("{}", interpret(&client, &(String::from(task.trim())), &res).await?);
+                        } else {
+                            println!("{}", res.trim());
+                        }
+                    },
+                    Err(error) => { 
+                        if error.is::<UserAbort>() {
+                            continue;
+                        } else {
+                            return Err(error);
+                        }
+                    }
                 }
+
             }
         }
     }
@@ -188,12 +232,26 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .action(ArgAction::SetTrue)
             .help("Display raw GPT output")
         )
+        .arg(
+            Arg::new("unsafe")
+            .short('u')
+            .long("unsafe")
+            .action(ArgAction::SetTrue)
+            .help("Execute commands without confirmation")
+        )
         .get_matches();
+
+    let flags = Flags {
+        repl:        matches.get_flag("repl"),
+        interpret:   matches.get_flag("interpret"),
+        debug:       matches.get_flag("debug"),
+        unsafe_mode: matches.get_flag("unsafe")
+    };
 
     let client = Client::new();
 
-    if matches.get_flag("repl") {
-        repl(&client, matches.get_flag("interpret"), matches.get_flag("debug")).await?;
+    if flags.repl {
+        repl(&client, flags).await?;
         return Ok(());
     }
 
@@ -205,9 +263,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let mut history: Vec<ChatCompletionRequestMessage> = Vec::new();
 
-    let res = try_command(&client, task.join(" "), &mut history, matches.get_flag("debug")).await?;
+    let res = try_command(&client, task.join(" "), &mut history, flags).await?;
 
-    if matches.get_flag("interpret") {
+    if flags.interpret {
         println!("{}", interpret(&client, &(task.join(" ")), &res).await?);
     } else {
         println!("{}", res.trim());
