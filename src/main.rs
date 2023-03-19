@@ -16,7 +16,6 @@ use serde_json::json;
 use std::error::Error;
 use std::process::Stdio;
 use std::io::{self, Write};
-use std::env::consts::OS;
 
 pub mod prompts;
 
@@ -30,9 +29,8 @@ fn try_extract(body: &String) -> Option<Value> {
         return None;
     }
 
-    let data = body.substring(body.find('{').unwrap(),body.find('}').unwrap()+1); 
-   //     .replace("*", "\\*");
-    //println!("{}", data);
+    let data = body.substring(body.find('{').unwrap(),body.rfind('}').unwrap()+1); 
+    
     match serde_json::from_str(&data) {
         Ok(commands) => Some(commands),
         Err(e) => { println!("{}", e); None }
