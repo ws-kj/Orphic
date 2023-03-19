@@ -16,9 +16,12 @@ use serde_json::json;
 use std::error::Error;
 use std::process::Stdio;
 use std::io::{self, Write};
-use std::env::consts::OS;
+// use std::env::consts::OS;
 
 pub mod prompts;
+
+const GPT35TURBO: &str = "gpt-3.5-turbo";
+const GPT4: &str = "gpt-4";
 
 fn get_prompt(key: &'static str) -> &str {
     assert!(prompts::PROMPTS[key].is_string());
@@ -39,11 +42,11 @@ fn try_extract(body: &String) -> Option<Value> {
     }
 }
 
-async fn parse_command(client: &Client, body: &String) -> Result<Option<Value>, Box<dyn Error>> {
+async fn parse_command(client: &Client, model: &str, body: &String) -> Result<Option<Value>, Box<dyn Error>> {
     match try_extract(body) {
         Some(commands) => Ok(Some(commands)),
         None => {
-            match verify_json(client, body).await? {
+            match verify_json(client, model, body).await? {
                 Some(body) => Ok(try_extract(&body)),
                 None => Ok(None)
             }
@@ -51,7 +54,7 @@ async fn parse_command(client: &Client, body: &String) -> Result<Option<Value>, 
     }
 }
 
-async fn verify_json(client: &Client, input: &String) -> Result<Option<String>, Box<dyn Error>> {
+async fn verify_json(client: &Client, model: &str, input: &String) -> Result<Option<String>, Box<dyn Error>> {
     let history = vec![
         ChatCompletionRequestMessage {
             role: Role::System,
@@ -67,7 +70,7 @@ async fn verify_json(client: &Client, input: &String) -> Result<Option<String>, 
 
     let request = CreateChatCompletionRequestArgs::default()
         .max_tokens(512u16)
-        .model("gpt-3.5-turbo")
+        .model(model)
         .messages(history)
         .build()?;
 
@@ -80,10 +83,10 @@ async fn verify_json(client: &Client, input: &String) -> Result<Option<String>, 
     }
 }
 
-async fn interpret(client: &Client, task: &String, output: &String) -> Result<String, Box<dyn Error>> {
+async fn interpret(client: &Client, model: &str, task: &String, output: &String) -> Result<String, Box<dyn Error>> {
     let request = CreateChatCompletionRequestArgs::default()
         .max_tokens(512u16)
-        .model("gpt-3.5-turbo")
+        .model(model)
         .messages(vec![
             ChatCompletionRequestMessage {
                 role: Role::System,
@@ -102,7 +105,7 @@ async fn interpret(client: &Client, task: &String, output: &String) -> Result<St
     Ok((response.choices[0]).message.content.to_owned())
 }
 
-async fn try_command(client: &Client, input: String, history: &mut Vec<ChatCompletionRequestMessage>, verbose: bool) -> Result<String, Box<dyn Error>> {
+async fn try_command(client: &Client, model: &str, input: String, history: &mut Vec<ChatCompletionRequestMessage>, verbose: bool) -> Result<String, Box<dyn Error>> {
     history.push(ChatCompletionRequestMessage {
         role: Role::User,
         content: input + get_prompt("assistant_user"),
@@ -111,7 +114,7 @@ async fn try_command(client: &Client, input: String, history: &mut Vec<ChatCompl
 
     let request = CreateChatCompletionRequestArgs::default()
         .max_tokens(512u16)
-        .model("gpt-3.5-turbo")
+        .model(model)
         .messages((*history).clone())
         .build()?;
 
@@ -120,7 +123,7 @@ async fn try_command(client: &Client, input: String, history: &mut Vec<ChatCompl
 
     if verbose { println!("{}", body); }
 
-    return match parse_command(client, &body).await? {
+    return match parse_command(client, model, &body).await? {
         Some(commands) => {
             match commands["command"].as_str() {
                 Some(command) => {
@@ -136,7 +139,7 @@ async fn try_command(client: &Client, input: String, history: &mut Vec<ChatCompl
     }
 }
     
-async fn repl(client: &Client, do_interpret: bool, verbose: bool) -> Result<(), Box<dyn Error>> {
+async fn repl(client: &Client, model: &str, do_interpret: bool, verbose: bool) -> Result<(), Box<dyn Error>> {
     let mut history: Vec<ChatCompletionRequestMessage> = Vec::new();
 
     loop {
@@ -147,7 +150,7 @@ async fn repl(client: &Client, do_interpret: bool, verbose: bool) -> Result<(), 
        match input.as_str().trim() {
             "quit" => break,
             task => {
-                let res = try_command(client, String::from(task), &mut history, verbose).await?;
+                let res = try_command(client, model, String::from(task), &mut history, verbose).await?;
                 history.push(ChatCompletionRequestMessage {
                     role: Role::Assistant,
                     content: res.clone(),
@@ -155,7 +158,7 @@ async fn repl(client: &Client, do_interpret: bool, verbose: bool) -> Result<(), 
                 });
                 
                 if do_interpret {
-                    println!("{}", interpret(&client, &(String::from(task.trim())), &res).await?);
+                    println!("{}", interpret(&client, model, &(String::from(task.trim())), &res).await?);
                 } else {
                     println!("{}", res.trim());
                 }
@@ -192,10 +195,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         )
         .get_matches();
 
+    let use_gpt4: bool = option_env!("USE_GPT4").unwrap_or("false").eq("true");
+    let model = if use_gpt4 { GPT4 } else { GPT35TURBO };
+
     let client = Client::new();
 
     if matches.get_flag("repl") {
-        repl(&client, matches.get_flag("interpret"), matches.get_flag("debug")).await?;
+        repl(&client, model, matches.get_flag("interpret"), matches.get_flag("debug")).await?;
         return Ok(());
     }
 
@@ -207,10 +213,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let mut history: Vec<ChatCompletionRequestMessage> = Vec::new();
 
-    let res = try_command(&client, task.join(" "), &mut history, matches.get_flag("debug")).await?;
+    let res = try_command(&client, model, task.join(" "), &mut history, matches.get_flag("debug")).await?;
 
     if matches.get_flag("interpret") {
-        println!("{}", interpret(&client, &(task.join(" ")), &res).await?);
+        println!("{}", interpret(&client, model, &(task.join(" ")), &res).await?);
     } else {
         println!("{}", res.trim());
     }
