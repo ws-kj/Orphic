@@ -1,6 +1,6 @@
 [package]
 name = "orphic"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Will Savage <wsavage6316@gmail.com>"]
 description = "A natural language interface for *nix systems.\n(Powered by ChatGPT)"
