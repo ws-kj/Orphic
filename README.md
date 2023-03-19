@@ -8,6 +8,7 @@ Orphic uses GPT to translate natural language tasks into shell commands, and the
 * Make sure your system has rust and cargo.
 * `cargo install orphic`
 * Orphic requires the `OPENAI_API_KEY` environment variable to be set. You can generate one [here](https://openai.com/).
+* If you have access to GPT-4, you can set the `ORPHIC_USE_GPT4` environment variable, which will use GPT-4 instead of GPT-3.5.
 
 ### Usage
 Orphic is designed to be used like you would use any other CLI tool.

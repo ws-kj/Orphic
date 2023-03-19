@@ -195,7 +195,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         )
         .get_matches();
 
-    let use_gpt4: bool = option_env!("USE_GPT4").unwrap_or("false").eq("true");
+    let use_gpt4: bool = option_env!("ORPHIC_USE_GPT4").unwrap_or("false").eq("true");
     let model = if use_gpt4 { GPT4 } else { GPT35TURBO };
 
     let client = Client::new();
