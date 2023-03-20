@@ -159,14 +159,14 @@ async fn try_command(client: &Client, input: String, history: &mut Vec<ChatCompl
                     }
 
                     let mut shell = shell(command);
-                    shell.stdout(Stdio::piped());
-                    Ok(String::from_utf8(shell.execute_output()?.stdout)?)
+                    shell.stdout(if !flags.interpret {Stdio::inherit()} else {Stdio::piped()});
+                    Ok(String::from_utf8(shell.execute_output()?.stdout)? + "\n")
 
                 },
-                None => Ok(body)
+                None => Ok(body + "\n")
             }
         },
-        None => Ok(body)
+        None => Ok(body + "\n")
     }
 }
     
@@ -193,7 +193,7 @@ async fn repl(client: &Client, flags: Flags) -> Result<(), Box<dyn Error>> {
                         if flags.interpret {
                             println!("{}", interpret(&client, &(String::from(task.trim())), &res, flags).await?);
                         } else {
-                            println!("{}", res.trim());
+                            print!("{}", res.trim());
                         }
                     },
                     Err(error) => { 
@@ -280,7 +280,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     if flags.interpret {
         println!("{}", interpret(&client, &(task.join(" ")), &res, flags).await?);
     } else {
-        println!("{}", res.trim());
+        print!("{}", res.trim());
     }
 
     Ok(())

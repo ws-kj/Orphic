@@ -3,8 +3,14 @@
 
 ---
 ### Overview
-Orphic uses GPT to translate complex tasks into shell commands to be executed on the system. 
+Orphic is a CLI tool that uses GPT to translate complex tasks into shell commands to be executed on the system. 
+It excels at tasks that are relatively straightfoward but require complex and obscure commands to accomplish.
 
+```
+$ orphic delete all installers or tars from ~/Downloads that are more than a week old
+find ~/Downloads -name '*.tar.*' -mtime +7 -delete; find ~/Downloads -name '*.dmg' -mtime +7 -delete
+Execute? [Y/n] Y
+```
 
 *Note: Orphic defaults to safe mode, and will not automatically execute commands without confirmation unless unsafe mode is specified.*
 
