@@ -14,7 +14,7 @@ lazy_static! {
         you will return is the command to be executed. The operating system is  
         ",
         "assistant_user": " (Answer only with the unix command formatted as a json 
-        object `{\"command\": \"<command to be executed>\". Do not expain anything)",
+        object `{\"command\": \"<command to be executed>\". Do not explain anything)",
         "assistant_examples": {
             "user": "what is the largest file on the desktop",
             "assistant": "{\"command\": \"du -ah ~/desktop | sort -rh | head -n 1\"}",
