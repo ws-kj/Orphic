@@ -1,9 +1,9 @@
 # Orphic
-*A natural language interface for \*nix systems.*
+*A natural language shell interface for \*nix systems.*
 
 ---
 ### Overview
-Orphic uses GPT to translate natural language tasks into shell commands, and then executes them on your system. Use at your own risk.
+Orphic uses GPT to translate complex tasks into shell commands to be executed on the system. 
 
 
 *Note: Orphic defaults to safe mode, and will not automatically execute commands without confirmation unless unsafe mode is specified.*
