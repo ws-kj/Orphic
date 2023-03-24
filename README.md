@@ -4,7 +4,7 @@
 ---
 ### Overview
 Orphic is a CLI tool that uses GPT to translate complex tasks into shell commands to be executed on the system. 
-It excels at tasks that are relatively straightfoward but require complex and obscure commands to accomplish.
+It excels at tasks that are relatively straightforward but require complex and obscure commands to accomplish.
 
 ```
 $ orphic delete all installers or tars from ~/Downloads that are more than a week old
